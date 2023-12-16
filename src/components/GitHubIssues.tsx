@@ -4,9 +4,11 @@ import { useQuery } from '@apollo/client';
 import { gql } from 'graphql-tag';
 import { PieChart, Pie, Cell, ResponsiveContainer } from 'recharts';
 import GitHubIssuesFilter from './GitHubIssuesFilter';
-import GitHubIssuesTable from './GitHubIssuesTable'
+import GitHubIssuesTable from './GitHubIssuesTable';
 import GitHubIssuesPagination from './GitHubIssuesPagination';
-import { GitHubIssuesData } from '../types'
+import { GitHubIssuesData, GitHubIssue } from '../types';
+import { accessToken } from '../config';
+
 
 const GITHUB_ISSUES_QUERY = gql`
   query GetGitHubIssues($owner: String!, $repo: String!, $labels: [String!], $status: [IssueState!], $cursor: String) {
@@ -46,12 +48,12 @@ const GITHUB_ISSUES_QUERY = gql`
 `;
 
 const pieChartData = [
-    { name: 'Label 1', value: 10, fill: '#0088FE' },
-    { name: 'Label 2', value: 20, fill: '#00C49F' },
-    { name: 'Label 3', value: 15, fill: '#FFBB28' },
-    { name: 'Label 4', value: 25, fill: '#FF8042' },
-    { name: 'Label 5', value: 30, fill: '#AF19FF' },
-  ];
+  { name: 'Label 1', value: 10, fill: '#0088FE' },
+  { name: 'Label 2', value: 20, fill: '#00C49F' },
+  { name: 'Label 3', value: 15, fill: '#FFBB28' },
+  { name: 'Label 4', value: 25, fill: '#FF8042' },
+  { name: 'Label 5', value: 30, fill: '#AF19FF' },
+];
 
 const COLORS = ['#0088FE', '#00C49F', '#FFBB28', '#FF8042', '#AF19FF'];
 
@@ -60,10 +62,20 @@ const GitHubIssues: React.FC = () => {
   const [status, setStatus] = useState<string[]>(['OPEN']);
   const [cursor, setCursor] = useState<string | null>(null);
 
-  // Destructure the data into variables with fallback values to handle potential undefined
-  const { data, fetchMore } = useQuery<GitHubIssuesData>(GITHUB_ISSUES_QUERY, {
+  // add a try catch block to handle errors
+  const { loading, error, data, fetchMore } = useQuery<GitHubIssuesData>(GITHUB_ISSUES_QUERY, {
     variables: { owner: 'facebook', repo: 'react', labels, status, cursor },
+    uri: 'http://localhost:3001/graphql', // Update with your proxy server URL
+    context: {
+      headers: {
+        Authorization: `bearer ${accessToken}`,
+      },
+    },
   });
+
+  if (loading) return <p>Loading...</p>;
+
+  if (error) return <p>Error :(</p>;
 
   const openIssues = data?.repository.openIssues.nodes || [];
   const closedIssues = data?.repository.closedIssues.nodes || [];
@@ -93,7 +105,7 @@ const GitHubIssues: React.FC = () => {
       />
       <GitHubIssuesTable issues={issues} />
       <ResponsiveContainer width="100%" height={400}>
-      <PieChart>
+        <PieChart>
           <Pie
             data={pieChartData}
             dataKey="value"

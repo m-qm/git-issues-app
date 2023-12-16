@@ -6,14 +6,13 @@ import { PieChart, Pie, Cell, ResponsiveContainer } from 'recharts';
 import GitHubIssuesFilter from './GitHubIssuesFilter';
 import GitHubIssuesTable from './GitHubIssuesTable';
 import GitHubIssuesPagination from './GitHubIssuesPagination';
-import { GitHubIssuesData, GitHubIssue } from '../types';
+import { GitHubIssuesData, GitHubIssue, IssueState } from '../types';
 import { accessToken } from '../config';
-
 
 const GITHUB_ISSUES_QUERY = gql`
   query GetGitHubIssues($owner: String!, $repo: String!, $labels: [String!], $status: [IssueState!], $cursor: String) {
     repository(owner: $owner, name: $repo) {
-      openIssues: issues(first: 5, after: $cursor, states: [OPEN], filterBy: { labels: $labels }) {
+      openIssues: issues(first: 5, after: $cursor, states: $status, filterBy: { labels: $labels }) {
         nodes {
           id
           title
@@ -59,13 +58,12 @@ const COLORS = ['#0088FE', '#00C49F', '#FFBB28', '#FF8042', '#AF19FF'];
 
 const GitHubIssues: React.FC = () => {
   const [labels, setLabels] = useState<string[]>([]);
-  const [status, setStatus] = useState<string[]>(['OPEN']);
+  const [status, setStatus] = useState<IssueState[]>(['OPEN']);
   const [cursor, setCursor] = useState<string | null>(null);
 
   // add a try catch block to handle errors
   const { loading, error, data, fetchMore } = useQuery<GitHubIssuesData>(GITHUB_ISSUES_QUERY, {
     variables: { owner: 'facebook', repo: 'react', labels, status, cursor },
-    uri: 'http://localhost:3001/graphql', // Update with your proxy server URL
     context: {
       headers: {
         Authorization: `bearer ${accessToken}`,
@@ -75,7 +73,7 @@ const GitHubIssues: React.FC = () => {
 
   if (loading) return <p>Loading...</p>;
 
-  if (error) return <p>Error :(</p>;
+  if (error) return <p>Error {error.message}</p>;
 
   const openIssues = data?.repository.openIssues.nodes || [];
   const closedIssues = data?.repository.closedIssues.nodes || [];
@@ -103,7 +101,6 @@ const GitHubIssues: React.FC = () => {
         owner="facebook"
         repo="react"
       />
-      <GitHubIssuesTable issues={issues} />
       <ResponsiveContainer width="100%" height={400}>
         <PieChart>
           <Pie

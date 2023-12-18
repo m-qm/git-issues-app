@@ -40,9 +40,13 @@ const GitHubIssuesFilter: React.FC<GitHubIssuesFilterProps> = ({
       </label>
       <div className="status-container">
         <span>Status: {selectedStatus}</span>
-        <button onClick={handleToggleStatus} className={`status-toggle ${selectedStatus.toLowerCase()}`}>
-          Toggle Status
-        </button>
+        <label className="switch">
+          <input type="checkbox" checked={selectedStatus === 'CLOSED'} onChange={handleToggleStatus} />
+          <span className="slider round">
+            <span className="status-label">Closed</span>
+            <span className="status-label">Open</span>
+          </span>
+        </label>
       </div>
     </div>
   );

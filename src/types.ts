@@ -2,6 +2,7 @@ export interface GitHubIssuesData {
   repository: {
     issues: {
       nodes: GitHubIssue[];
+      totalCount: number;
       pageInfo: {
         endCursor: string;
         hasNextPage: boolean;

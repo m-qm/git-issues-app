@@ -1,0 +1,24 @@
+/* src/components/GitHubIssuesFilter.css */
+.github-issues-filter {
+    /* Add any additional styling for the overall container */
+  }
+  
+  .status-container {
+    display: flex;
+    align-items: center;
+  }
+  
+  .status-toggle {
+    padding: 5px 10px;
+    cursor: pointer;
+    transition: background-color 0.3s ease; /* Smooth transition for background color */
+  }
+  
+  .status-toggle.open {
+    background-color: #5cb85c; /* Green color for OPEN status */
+  }
+  
+  .status-toggle.closed {
+    background-color: #d9534f; /* Red color for CLOSED status */
+  }
+  

@@ -1,6 +1,7 @@
 // src/components/GitHubIssuesTable.tsx
 import React from 'react';
 import { GitHubIssue } from '../types';
+import './GitHubIssuesTable.css';// Import the CSS file
 
 interface GitHubIssuesTableProps {
   issues: GitHubIssue[] | null;

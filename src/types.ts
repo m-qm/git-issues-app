@@ -1,30 +1,22 @@
-// src/types.ts
+export interface GitHubIssuesData {
+  repository: {
+    issues: {
+      nodes: GitHubIssue[];
+      pageInfo: {
+        endCursor: string;
+        hasNextPage: boolean;
+      };
+    };
+  };
+}
+
 export interface GitHubIssue {
-    id: string;
-    title: string;
-    labels: {
-      nodes: {
-        name: string;
-      }[];
-    };
-  }
-  
-  export interface GitHubIssuesData {
-    repository: {
-      openIssues: {
-        nodes: GitHubIssue[];
-        pageInfo: {
-          endCursor: string;
-          hasNextPage: boolean;
-        };
-      };
-      closedIssues: {
-        nodes: GitHubIssue[];
-        pageInfo: {
-          endCursor: string;
-          hasNextPage: boolean;
-        };
-      };
-    };
-  }
-  
+  id: string;
+  title: string;
+  state: 'OPEN' | 'CLOSED'; // Add this line
+  labels: {
+    nodes: {
+      name: string;
+    }[];
+  };
+}

@@ -1,0 +1,48 @@
+/* GitHubIssuesTable component styles */
+table {
+  width: 700px;
+  height: 403px;
+  border-collapse: collapse;
+  margin-top: 16px;
+  border-radius: 20px;
+  overflow: hidden;
+  background: #EEE;
+}
+
+th, td {
+  padding: 12px;
+  border: 1px solid #6a737d; /* Darker grey color */
+  text-align: left;
+}
+
+th {
+  background-color: #f6f8fa;
+}
+
+td {
+  background-color: #f3f4f6; /* Lighter grey color */
+}
+
+/* Add 14px padding between td elements */
+td + td {
+  padding-left: 14px;
+}
+
+/* Add 14px margin-bottom between tr elements */
+tr + tr {
+  margin-bottom: 14px;
+}
+
+/* Specific styles for each row */
+tr {
+  height: 37px;
+}
+
+/* ResponsiveContainer styles */
+.ResponsiveContainer {
+  width: 100%;
+  height: 400px;
+  margin-bottom: 16px;
+  border-radius: 20px;
+  overflow: hidden;
+}

@@ -1,6 +1,18 @@
+export interface GitHubIssue {
+  id: string;
+  title: string;
+  state: string;
+  labels: {
+    nodes: {
+      name: string;
+    }[];
+  };
+}
+
 export interface GitHubIssuesData {
   repository: {
     issues: {
+      __typename: string; // Add this line
       nodes: GitHubIssue[];
       totalCount: number;
       pageInfo: {
@@ -8,16 +20,5 @@ export interface GitHubIssuesData {
         hasNextPage: boolean;
       };
     };
-  };
-}
-
-export interface GitHubIssue {
-  id: string;
-  title: string;
-  state: 'OPEN' | 'CLOSED'; // Add this line
-  labels: {
-    nodes: {
-      name: string;
-    }[];
   };
 }

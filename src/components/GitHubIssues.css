@@ -45,6 +45,12 @@ div {
     cursor: pointer;
   }
 
+  .github-issues-container {
+    display: flex;
+    flex-direction: row;
+    align-items: center;
+  }
+
   
   /* ResponsiveContainer styles */
   .ResponsiveContainer {
@@ -53,5 +59,40 @@ div {
     margin-bottom: 16px;
     border-radius: 6px;
     overflow: hidden;
+  }
+  
+.legend-label {
+    font-size: 14px;
+    font-weight: 600;
+    margin-bottom: 8px;
+  }
+  
+  .legend-value {
+    font-size: 14px;
+    margin-bottom: 8px;
+  }
+  
+  .legend-container {
+    display: flex;
+    flex-direction: column;
+    margin-left: 16px;
+  }
+  
+  .legend-item {
+    display: flex;
+    flex-direction: row;
+    align-items: center;
+    margin-bottom: 8px;
+  }
+  
+  .legend-color {
+    width: 16px;
+    height: 16px;
+    margin-right: 8px;
+    border-radius: 50%;
+  }
+  
+  .legend-text {
+    font-size: 14px;
   }
   

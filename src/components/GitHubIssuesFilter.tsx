@@ -1,87 +1,67 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState } from 'react';
+import { useApolloClient } from '@apollo/client';
+import { gql } from 'graphql-tag';
+import { GitHubIssuesFilterProps } from '../types';
 
-interface GitHubIssuesFilterProps {
-  labels: string[];
-  setLabels: React.Dispatch<React.SetStateAction<string[]>>;
-  setStatus: React.Dispatch<React.SetStateAction<string[]>>;
-  fetchIssues: (variables: { owner: string; repo: string; labels: string[]; status: string[]; cursor: null | string }) => Promise<any>;
-  owner: string;
-  repo: string;
-  cursor: string | null;
-  status: string[];
-  setCursor: React.Dispatch<React.SetStateAction<string | null>>;
-  setIssues: React.Dispatch<React.SetStateAction<any[]>>; // Add this line
-}
 
-const GitHubIssuesFilter: React.FC<GitHubIssuesFilterProps> = ({
+const GitHubIssuesFilter: React.FC<GitHubIssuesFilterProps & { fetchIssues: (variables: { owner: string; repo: string; labels: string[]; status: string[]; cursor: string | null }) => Promise<void> }> = ({
   labels,
   setLabels,
-  setStatus,
-  fetchIssues,
-  owner,
   repo,
-  cursor,
+  owner,
   status,
-  setIssues, // Add this line
-  setCursor,
+  setIssues,
 }) => {
   const [selectedStatus, setSelectedStatus] = useState<string>('OPEN');
-  const [labelOptions, setLabelOptions] = useState<string[]>([]);
+  const client = useApolloClient();
 
   const handleLabelChange = (selectedLabels: string[]) => {
     setLabels(selectedLabels);
   };
-
-  const renderLabelOptions = () => {
-    return labelOptions.map((label: string) => (
-      <option key={label} value={label}>
-        {label}
-      </option>
-    ));
-  };
-
-  const handleSubmit = async (e: React.FormEvent) => {
+  const handleSubmit = async (e: React.FormEvent<HTMLFormElement>) => {
     e.preventDefault();
-    const updatedLabels = labels.length > 0 ? labels : [];
-
     try {
-      const data = await fetchIssues({ owner, repo, labels: updatedLabels, status: [selectedStatus], cursor: null });
-      const uniqueLabelOptions = Array.from(new Set(data?.repository?.issues?.nodes.flatMap((issue: any) => issue.labels.nodes.map((label: any) => label.name))) || []) as string[];
-      setLabelOptions(uniqueLabelOptions);
+      const result = await client.query(
+        {
+          query: gql`
+            query GetGitHubIssues($owner: String!, $repo: String!, $states: [IssueState!], $labels: [String!], $cursor: String) {
+              repository(owner: $owner, name: $repo) {
+                issues(first: 10, states: $states, labels: $labels, after: $cursor) {
+                  totalCount
+                  nodes {
+                    id
+                    title
+                    state
+                    labels(first: 5) {
+                      nodes {
+                        name
+                      }
+                    }
+                  }
+                  pageInfo {
+                    endCursor
+                    hasNextPage
+                  }
+                }
+              }
+            }
+          `,
+          variables: {
+            owner,
+            repo,
+            states: [selectedStatus],
+            labels: labels.length > 0 ? labels : null,
+            cursor: null,
+          },
+        }
+      )
+        console.log(result, 'result')
+      const newData = result.data; // Adjust this based on the structure of your response
+      setIssues(newData.repository.issues.nodes);
     } catch (error) {
       console.error('Error fetching issues:', error);
     }
   };
-
-  useEffect(() => {
-    const fetchData = async () => {
-      try {
-        const newData = await fetchIssues({
-          owner,
-          repo,
-          status,
-          labels: labels.filter((label) => label.trim() !== ''),
-          cursor: cursor,
-        });
-
-        const newIssues = newData?.repository?.issues?.nodes || [];
-        setIssues((prevIssues: any) => [...prevIssues, ...newIssues]);
-
-        if (newData?.repository?.issues?.pageInfo.hasNextPage) {
-          setCursor(newData?.repository?.issues?.pageInfo.endCursor || null);
-        } else {
-          setCursor(null);
-        }
-      } catch (error) {
-        console.error('Error fetching more issues:', error);
-      }
-    };
-
-    if (cursor) {
-      fetchData();
-    }
-  }, [cursor, fetchIssues, labels, status, setIssues, setCursor]); // Add setIssues and setCursor to dependencies
-
 
   return (
     <form onSubmit={handleSubmit}>
@@ -89,10 +69,14 @@ const GitHubIssuesFilter: React.FC<GitHubIssuesFilterProps> = ({
         Labels:
         <select
           multiple
-          value={labels}
+          value={labels || []}
           onChange={(e) => handleLabelChange(Array.from(e.target.selectedOptions, (option) => option.value))}
         >
-          {renderLabelOptions()}
+          {labels?.map((label: string) => (
+            <option key={label} value={label}>
+              {label}
+            </option>
+          ))}
         </select>
       </label>
       <label>

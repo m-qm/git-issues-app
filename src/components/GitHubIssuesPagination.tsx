@@ -1,13 +1,6 @@
-// src/components/GitHubIssuesPagination.tsx
+// GitHubIssuesPagination.tsx
 import React from 'react';
-
-interface GitHubIssuesPaginationProps {
-  pageInfo: {
-    endCursor: string;
-    hasNextPage: boolean;
-  } | null;
-  handlePageChange: (newCursor: string) => void;
-}
+import { GitHubIssuesPaginationProps } from '../types';
 
 const GitHubIssuesPagination: React.FC<GitHubIssuesPaginationProps> = ({ pageInfo, handlePageChange }) => {
   return (

@@ -1,15 +1,14 @@
-// src/components/GitHubIssues.tsx
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useCallback } from 'react';
 import { useQuery } from '@apollo/client';
 import { gql } from 'graphql-tag';
 import { Pie } from 'react-chartjs-2';
 import { Chart as ChartJS, ArcElement, Tooltip, Legend } from 'chart.js';
-
 import GitHubIssuesFilter from './GitHubIssuesFilter';
 import GitHubIssuesTable from './GitHubIssuesTable';
 import { GitHubIssuesData } from '../types';
 import './GitHubIssues.css'; // Import the CSS file
 import 'bootstrap/dist/css/bootstrap.min.css';
+import GitHubIssuesPagination from './GitHubIssuesPagination';
 ChartJS.register(ArcElement, Tooltip, Legend);
 
 const GITHUB_ISSUES_QUERY = gql`
@@ -40,10 +39,10 @@ const GitHubIssues: React.FC = () => {
   const [labels, setLabels] = useState<string[]>([]);
   const [status, setStatus] = useState<string[]>(['OPEN']);
   const [cursor, setCursor] = useState<string | null>(null);
-  const [issues, setIssues] = useState<any[]>([]);
+  const [issues, setIssues] = useState<GitHubIssuesData['repository']['issues']['nodes']>([]);
   const [loadingMore, setLoadingMore] = useState(false);
 
-  const { loading, error, data, refetch, fetchMore } = useQuery<GitHubIssuesData>(GITHUB_ISSUES_QUERY, {
+  const { loading, error, data, fetchMore } = useQuery<GitHubIssuesData>(GITHUB_ISSUES_QUERY, {
     variables: {
       owner: 'facebook',
       repo: 'react',
@@ -52,11 +51,15 @@ const GitHubIssues: React.FC = () => {
       cursor: null,
     },
   });
-
-  if (error) return <p>Error :(</p>;
-
+  useEffect(() => {
+    if (!loading && data) {
+      const initialIssues = data.repository?.issues?.nodes || [];
+      setIssues(initialIssues);
+    }
+  }, [loading, data]);
+  console.log(data, 'data')
   const openIssues = data?.repository?.issues?.nodes || [];
-  const fetchedIssues = cursor ? openIssues : issues;
+  const fetchedIssues = issues.length > 0 ? issues : openIssues;
 
   const labelCounts: { [label: string]: number } = {};
   fetchedIssues.forEach((issue) => {
@@ -64,6 +67,74 @@ const GitHubIssues: React.FC = () => {
       labelCounts[label.name] = (labelCounts[label.name] || 0) + 1;
     });
   });
+
+
+  const handlePrevPage = useCallback(() => {
+    if (data?.repository?.issues?.pageInfo?.hasPreviousPage) {
+      setLoadingMore(true);
+
+      fetchMore({
+        variables: {
+          owner: 'facebook',
+          repo: 'react',
+          states: status,
+          labels: labels || [],
+          cursor: data.repository.issues.pageInfo.startCursor,
+        },
+        updateQuery: (prev, { fetchMoreResult }) => {
+          if (!fetchMoreResult) return prev;
+          return {
+            repository: {
+              ...prev.repository,
+              issues: {
+                ...prev.repository.issues,
+                nodes: [...fetchMoreResult.repository.issues.nodes, ...prev.repository.issues.nodes],
+                pageInfo: fetchMoreResult.repository.issues.pageInfo,
+              },
+            },
+          };
+        },
+      }).then((result) => {
+        const newIssues = result.data?.repository?.issues?.nodes || [];
+        setIssues([...newIssues, ...issues]);
+        setLoadingMore(false);
+      }).catch((error) => {
+        console.error('Error fetching previous page issues:', error);
+        setLoadingMore(false);
+      });
+    }
+  }, [data, fetchMore, labels, issues, status]);
+
+  const handlePageChange = useCallback((cursor: string) => {
+    fetchMore({
+      variables: {
+        owner: 'facebook',
+        repo: 'react',
+        states: status,
+        labels: labels || [],
+        cursor,
+      },
+      updateQuery: (prev, { fetchMoreResult }) => {
+        if (!fetchMoreResult) return prev;
+        return {
+          repository: {
+            ...prev.repository,
+            issues: {
+              ...prev.repository.issues,
+              nodes: fetchMoreResult.repository.issues.nodes,
+              pageInfo: fetchMoreResult.repository.issues.pageInfo,
+            },
+          },
+        };
+      },
+    }).then((result) => {
+      const newIssues = result.data?.repository?.issues?.nodes || [];
+      setIssues(newIssues);
+    }).catch((error) => {
+      console.error('Error fetching issues:', error);
+    });
+  }
+    , [fetchMore, labels, status]);
 
   const updatedPieChartData = {
     labels: Object.keys(labelCounts),
@@ -87,60 +158,6 @@ const GitHubIssues: React.FC = () => {
     ],
   };
 
-  const handlePageChange = () => {
-    if (data?.repository?.issues?.pageInfo.hasNextPage && !loadingMore) {
-      setLoadingMore(true);
-      setCursor(data?.repository?.issues?.pageInfo.endCursor || null);
-    }
-  };
-
-  const fetchMoreIssues = async () => {
-    try {
-      const result = await fetchMore({
-        variables: {
-          owner: 'facebook',
-          repo: 'react',
-          status,
-          labels: labels.filter((label) => label.trim() !== ''),
-          cursor,
-        },
-        updateQuery: (prev, { fetchMoreResult }) => {
-          if (!fetchMoreResult) return prev;
-  
-          const newIssues = fetchMoreResult.repository.issues.nodes;
-          const pageInfo = fetchMoreResult.repository.issues.pageInfo;
-  
-          return {
-            repository: {
-              __typename: prev.repository.__typename,
-              issues: {
-                __typename: prev.repository.issues.__typename,
-                nodes: [...prev.repository.issues.nodes, ...newIssues],
-                pageInfo,
-              },
-            },
-          };
-        },
-      });
-  
-      if (!result.data.repository.issues.pageInfo.hasNextPage) {
-        setCursor(null);
-      } else {
-        setCursor(result.data.repository.issues.pageInfo.endCursor);
-      }
-    } catch (error) {
-      console.error('Error fetching more issues:', error);
-    } finally {
-      setLoadingMore(false);
-    }
-  };
-
-  useEffect(() => {
-    if (cursor) {
-      fetchMoreIssues();
-    }
-  }, [cursor, fetchMoreIssues, labels, status]);
-
   const chartOptions = {
     legend: {
       display: false, // Disable default legend
@@ -157,21 +174,33 @@ const GitHubIssues: React.FC = () => {
     color: updatedPieChartData.datasets[0].backgroundColor[index],
   }));
 
+  if (error) return <p>Error: {error.message}</p>;
+  console.log('issues', issues)
   return (
     <div>
       <h1>GitHub Issues</h1>
       <GitHubIssuesFilter
-        labels={labels}
+        labels={labelCounts ? Object.keys(labelCounts) : []}
         setLabels={setLabels}
         setStatus={setStatus}
-
         cursor={cursor}
+        fetchIssues={async (variables) => {
+          await fetchMore({
+            variables: {
+              owner: variables.owner,
+              repo: variables.repo,
+              states: variables.status,
+              labels: variables.labels || [],
+              cursor: variables.cursor,
+            },
+          });
+        }}
         status={status}
         setCursor={setCursor}
-        fetchIssues={fetchMoreIssues}
         owner="facebook"
         repo="react"
         setIssues={setIssues}
+        setLoadingMore={setLoadingMore}
       />
       {loading ? (
         <p>Loading...</p>
@@ -189,11 +218,12 @@ const GitHubIssues: React.FC = () => {
               </div>
             ))}
           </div>
-          {data?.repository?.issues?.pageInfo.hasNextPage && (
-            <button onClick={() => handlePageChange()}>
-              Load More
-            </button>
-          )}
+          <div className="github-issues-container">
+            <GitHubIssuesPagination
+              pageInfo={data?.repository?.issues?.pageInfo} handlePageChange={
+              handlePageChange
+            } />
+          </div>
         </div>
       )}
     </div>

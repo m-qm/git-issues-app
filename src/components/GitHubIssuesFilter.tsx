@@ -1,8 +1,11 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { useApolloClient } from '@apollo/client';
 import { gql } from 'graphql-tag';
+import SwitchButton from './SwitchButton';
 import { GitHubIssuesFilterProps } from '../types';
-
+import { GITHUB_ISSUES_QUERY } from './GitHubIssues';
+import './GitHubIssuesFilter.css';
+import { ButtonGroup, Button } from 'react-bootstrap';
 
 const GitHubIssuesFilter: React.FC<GitHubIssuesFilterProps & { fetchIssues: (variables: { owner: string; repo: string; labels: string[]; status: string[]; cursor: string | null }) => Promise<void> }> = ({
   labels,
@@ -12,85 +15,132 @@ const GitHubIssuesFilter: React.FC<GitHubIssuesFilterProps & { fetchIssues: (var
   status,
   setIssues,
 }) => {
+  const [selectedLabels, setSelectedLabels] = useState<string[]>([]);
   const [selectedStatus, setSelectedStatus] = useState<string>('OPEN');
+  const [closedCount, setClosedCount] = useState(0);
+  const [openCount, setOpenCount] = useState(0);
+  const [isOpen, setIsOpen] = useState(true);
+
   const client = useApolloClient();
 
-  const handleLabelChange = (selectedLabels: string[]) => {
-    setLabels(selectedLabels);
+  const handleLabelChange = (selectedLabel: string) => {
+    setSelectedLabels((prevLabels) => {
+      const updatedLabels = prevLabels.includes(selectedLabel)
+        ? prevLabels.filter((label) => label !== selectedLabel)
+        : [...prevLabels, selectedLabel];
+
+      fetchIssuesData(updatedLabels, selectedStatus);
+      return updatedLabels;
+    });
   };
-  const handleSubmit = async (e: React.FormEvent<HTMLFormElement>) => {
-    e.preventDefault();
+
+  const fetchIssuesData = async (updatedLabels: string[], currentStatus: string) => {
     try {
-      const result = await client.query(
-        {
-          query: gql`
-            query GetGitHubIssues($owner: String!, $repo: String!, $states: [IssueState!], $labels: [String!], $cursor: String) {
-              repository(owner: $owner, name: $repo) {
-                issues(first: 10, states: $states, labels: $labels, after: $cursor) {
-                  totalCount
-                  nodes {
-                    id
-                    title
-                    state
-                    labels(first: 5) {
-                      nodes {
-                        name
-                      }
+      const result = await client.query({
+        query: gql`
+          query GetGitHubIssues($owner: String!, $repo: String!, $states: [IssueState!], $labels: [String!], $cursor: String) {
+            repository(owner: $owner, name: $repo) {
+              issues(first: 10, states: $states, labels: $labels, after: $cursor) {
+                totalCount
+                nodes {
+                  id
+                  title
+                  state
+                  labels(first: 5) {
+                    nodes {
+                      name
                     }
                   }
-                  pageInfo {
-                    endCursor
-                    hasNextPage
-                  }
+                }
+                pageInfo {
+                  endCursor
+                  hasNextPage
                 }
               }
             }
-          `,
-          variables: {
-            owner,
-            repo,
-            states: [selectedStatus],
-            labels: labels.length > 0 ? labels : null,
-            cursor: null,
-          },
-        }
-      )
-        console.log(result, 'result')
-      const newData = result.data; // Adjust this based on the structure of your response
+          }
+        `,
+        variables: {
+          owner,
+          repo,
+          states: [currentStatus],
+          labels: updatedLabels.length > 0 ? updatedLabels : null,
+          cursor: null,
+        },
+      });
+      console.log(result, 'result');
+      const newData = result.data;
       setIssues(newData.repository.issues.nodes);
     } catch (error) {
       console.error('Error fetching issues:', error);
     }
   };
 
+  const handleToggle = () => {
+    const newStatus = isOpen ? 'CLOSED' : 'OPEN';
+    setSelectedStatus(newStatus);
+    fetchIssuesData(selectedLabels, newStatus);
+    setIsOpen(!isOpen);
+  };
+
+  useEffect(() => {
+    const fetchCounts = async () => {
+      try {
+        const result = await client.query({
+          query: GITHUB_ISSUES_QUERY,
+          variables: {
+            owner,
+            repo,
+            states: null,
+          },
+        });
+
+        const data = result.data;
+        const openIssuesCount = data.repository.open.totalCount;
+        const closedIssuesCount = data.repository.closed.totalCount;
+
+        setClosedCount(closedIssuesCount);
+        setOpenCount(openIssuesCount);
+      } catch (error) {
+        console.error('Error fetching issue counts:', error);
+      }
+    };
+
+    fetchCounts();
+  }, [client, owner, repo]);
+
   return (
-    <form onSubmit={handleSubmit}>
-      <label>
-        Labels:
-        <select
-          multiple
-          value={labels || []}
-          onChange={(e) => handleLabelChange(Array.from(e.target.selectedOptions, (option) => option.value))}
-        >
-          {labels?.map((label: string) => (
-            <option key={label} value={label}>
-              {label}
-            </option>
-          ))}
-        </select>
-      </label>
-      <label>
-        Status:
-        <select
-          value={selectedStatus}
-          onChange={(e) => setSelectedStatus(e.target.value)}
-        >
-          <option value="OPEN">Open</option>
-          <option value="CLOSED">Closed</option>
-        </select>
-      </label>
-      <button type="submit">Apply Filters</button>
-    </form>
+    <div>
+      <ButtonGroup
+        // add a wrap to the button group
+        style={{
+          flexWrap: 'wrap',
+          width: '80%',
+        }}
+      >
+        {labels?.map((label: string) => (
+          <Button
+            key={label}
+            variant={selectedLabels.includes(label) ? 'primary' : 'outline-primary'}
+            onClick={() => handleLabelChange(label)}
+            size="sm"
+            role="checkbox"
+            aria-checked={selectedLabels.includes(label)}
+            style={{
+              // add some space between the buttons
+              margin: '0.25rem',
+              // add rounded corners to the buttons
+              borderRadius: '0.25rem',
+            }}
+          >
+            {label}
+          </Button>
+        ))}
+      </ButtonGroup>
+      
+      <SwitchButton onToggle={handleToggle} isOpen={isOpen} closedCount={closedCount} openCount={openCount} />
+
+    </div>
   );
 };
 

@@ -9,7 +9,17 @@ div {
     font-size: 24px;
     margin-bottom: 16px;
   }
+
+  .top-bar {
+    display: flex;
+    justify-content: flex-start;
+    align-items: center;
+    margin-left: 4px;
+  }
   
+  .top-bar-item {
+    margin-left: 16px;
+  }
   /* GitHubIssuesFilter component styles */
   form {
     margin-bottom: 16px;
@@ -51,6 +61,11 @@ div {
     align-items: center;
   }
 
+  .github-issues-left-container {
+    display: flex;
+    flex-direction: column;
+  }
+
   
   /* ResponsiveContainer styles */
   .ResponsiveContainer {
@@ -60,13 +75,7 @@ div {
     border-radius: 6px;
     overflow: hidden;
   }
-  
-.legend-label {
-    font-size: 14px;
-    font-weight: 600;
-    margin-bottom: 8px;
-  }
-  
+
   .legend-value {
     font-size: 14px;
     margin-bottom: 8px;
@@ -74,14 +83,14 @@ div {
   
   .legend-container {
     display: flex;
-    flex-direction: column;
+    flex-direction: row;
     margin-left: 16px;
   }
   
   .legend-item {
     display: flex;
-    flex-direction: row;
     align-items: center;
+    margin-right: 16px;
     margin-bottom: 8px;
   }
   

@@ -6,6 +6,7 @@ export interface GitHubIssue {
   id: string;
   title: string;
   state: string;
+  date: string;
   __typename: string;
   labels: {
     nodes: {
@@ -17,7 +18,11 @@ export interface GitHubIssue {
 export interface GitHubIssuesData {
   repository: {
     __typename: string;
-    owner: string;
+    name: string;
+    owner: {
+      __typename: string;
+      login: string;
+    };
     issues: {
       nodes: GitHubIssue[];
       totalCount: number;
@@ -83,4 +88,5 @@ export interface GitHubIssuesPaginationProps {
     hasNextPage: boolean;
   } | undefined;
   handlePageChange: (newCursor: string) => void;
+  handlePrevPage: () => void;
 }

@@ -11,9 +11,22 @@ import 'bootstrap/dist/css/bootstrap.min.css';
 import GitHubIssuesPagination from './GitHubIssuesPagination';
 ChartJS.register(ArcElement, Tooltip, Legend);
 
-const GITHUB_ISSUES_QUERY = gql`
+export const GITHUB_ISSUES_QUERY = gql`
   query GetGitHubIssues($owner: String!, $repo: String!, $states: [IssueState!], $labels: [String!], $cursor: String) {
     repository(owner: $owner, name: $repo) {
+      name
+      owner {
+        login
+      }
+      all:issues {
+        totalCount
+      }
+      closed:issues(states:CLOSED) {
+        totalCount
+      }
+      open:issues(states:OPEN) {
+        totalCount
+      }
       issues(first: 10, states: $states, labels: $labels, after: $cursor) {
         totalCount
         nodes {
@@ -34,6 +47,9 @@ const GITHUB_ISSUES_QUERY = gql`
     }
   }
 `;
+
+
+
 
 const GitHubIssues: React.FC = () => {
   const [labels, setLabels] = useState<string[]>([]);
@@ -57,12 +73,11 @@ const GitHubIssues: React.FC = () => {
       setIssues(initialIssues);
     }
   }, [loading, data]);
-  console.log(data, 'data')
+
   const openIssues = data?.repository?.issues?.nodes || [];
-  const fetchedIssues = issues.length > 0 ? issues : openIssues;
 
   const labelCounts: { [label: string]: number } = {};
-  fetchedIssues.forEach((issue) => {
+  openIssues.forEach((issue) => {
     issue.labels.nodes.forEach((label: any) => {
       labelCounts[label.name] = (labelCounts[label.name] || 0) + 1;
     });
@@ -178,7 +193,14 @@ const GitHubIssues: React.FC = () => {
   console.log('issues', issues)
   return (
     <div>
-      <h1>GitHub Issues</h1>
+      <h1>Public Issues</h1>
+      <div className="top-bar">
+        <h2>{data?.repository?.owner?.login}/
+          {data?.repository?.name}
+        </h2>
+        <span className="top-bar-item">{data?.repository?.issues?.totalCount} issues</span>
+      </div>
+
       <GitHubIssuesFilter
         labels={labelCounts ? Object.keys(labelCounts) : []}
         setLabels={setLabels}
@@ -206,24 +228,45 @@ const GitHubIssues: React.FC = () => {
         <p>Loading...</p>
       ) : (
         <div className="github-issues-container">
-          <GitHubIssuesTable issues={issues} />
-          <div style={{ display: 'flex', flexDirection: 'row', justifyContent: 'center' }}>
+          <div className="github-issues-left-container">
+            <GitHubIssuesTable issues={issues} />
+            <div className="github-issues-container">
+              <GitHubIssuesPagination
+                pageInfo={data?.repository?.issues?.pageInfo} handlePageChange={handlePageChange}
+                handlePrevPage={handlePrevPage}
+              />
+            </div>
+          </div>
+
+          <div style={{ display: 'flex', flexDirection: 'column', justifyContent: 'center', width: '300px' }}>
             <Pie data={updatedPieChartData} options={chartOptions} />
-          </div>
-          <div className="legend-container">
-            {legendData.map((item, index) => (
-              <div key={index} className="legend-item">
-                <span className="legend-color" style={{ backgroundColor: item.color }}></span>
-                <span className="legend-label">{item.label}</span>
+            <div className="legend-container">
+              <div className="column">
+                {legendData.slice(0, 5).map((item) => (
+                  <div key={item.label} className="legend-item">
+                    <span className="legend-color" style={
+                      { backgroundColor: item.color }
+                    }></span>
+                    <span>{item.label}</span>
+                  </div>
+                ))}
               </div>
-            ))}
+              <div className="column">
+                {legendData.slice(5, 10).map((item, index) => (
+                  <div key={item.label} className="legend-item">
+                    <span className="legend-color"
+                    style={
+                      { backgroundColor: item.color }
+                    }
+                    ></span>
+                    <span>{item.label}</span>
+                  </div>
+                ))}
+              </div>
+            </div>
+
           </div>
-          <div className="github-issues-container">
-            <GitHubIssuesPagination
-              pageInfo={data?.repository?.issues?.pageInfo} handlePageChange={
-              handlePageChange
-            } />
-          </div>
+
         </div>
       )}
     </div>

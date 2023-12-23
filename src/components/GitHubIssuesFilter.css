@@ -1,58 +1,23 @@
-/* src/components/GitHubIssuesFilter.css */
-.github-issues-filter {
-  /* Add any additional styling for the overall container */
-}
+/* Add these styles to your existing CSS file or create a new one */
 
-.status-container {
-  display: flex;
-  align-items: center;
-}
-
-.switch {
-  position: relative;
+.label-button {
   display: inline-block;
-  width: 60px;
-  height: 34px;
-}
-
-.switch input {
-  opacity: 0;
-  width: 0;
-  height: 0;
-}
-
-.slider {
-  position: absolute;
+  margin: 5px;
+  padding: 8px 16px;
+  font-size: 14px;
+  font-weight: 600;
+  text-align: center;
+  text-decoration: none;
   cursor: pointer;
-  top: 0;
-  left: 0;
-  right: 0;
-  bottom: 0;
-  background-color: #ccc;
-  -webkit-transition: 0.4s;
-  transition: 0.4s;
-  border-radius: 34px;
+  border: 1px solid #d1d5da;
+  border-radius: 6px;
+  color: #24292e;
+  background-color: #ffffff;
+  transition: background-color 0.3s ease, color 0.3s ease, border-color 0.3s ease;
 }
 
-.slider:before {
-  position: absolute;
-  content: '';
-  height: 26px;
-  width: 26px;
-  left: 4px;
-  bottom: 4px;
-  background-color: white;
-  -webkit-transition: 0.4s;
-  transition: 0.4s;
-  border-radius: 50%;
-}
-
-input:checked + .slider {
-  background-color: #2196f3;
-}
-
-input:checked + .slider:before {
-  -webkit-transform: translateX(26px);
-  -ms-transform: translateX(26px);
-  transform: translateX(26px);
+.label-button.selected {
+  color: #ffffff;
+  background-color: #0366d6;
+  border-color: #0366d6;
 }

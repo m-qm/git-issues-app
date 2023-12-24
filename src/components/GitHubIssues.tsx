@@ -1,15 +1,16 @@
 import React, { useState, useEffect, useCallback } from 'react';
-import { useQuery } from '@apollo/client';
+import { useQuery, ApolloError } from '@apollo/client';
 import { gql } from 'graphql-tag';
-import { Pie } from 'react-chartjs-2';
-import { Chart as ChartJS, ArcElement, Tooltip, Legend } from 'chart.js';
+
+import GitHubIssuesDoughnutChart from './GitHubIssuesDoughnut';
+
 import GitHubIssuesFilter from './GitHubIssuesFilter';
 import GitHubIssuesTable from './GitHubIssuesTable';
 import { GitHubIssuesData } from '../types';
+import { Chart as ChartJS, Tooltip, Legend, ArcElement } from 'chart.js';
 import './GitHubIssues.css'; // Import the CSS file
-import 'bootstrap/dist/css/bootstrap.min.css';
 import GitHubIssuesPagination from './GitHubIssuesPagination';
-ChartJS.register(ArcElement, Tooltip, Legend);
+ChartJS.register(Tooltip, Legend, ArcElement);
 
 export const GITHUB_ISSUES_QUERY = gql`
   query GetGitHubIssues($owner: String!, $repo: String!, $states: [IssueState!], $labels: [String!], $cursor: String) {
@@ -33,6 +34,7 @@ export const GITHUB_ISSUES_QUERY = gql`
           id
           title
           state
+          date: createdAt
           labels(first: 5) {
             nodes {
               name
@@ -40,6 +42,7 @@ export const GITHUB_ISSUES_QUERY = gql`
           }
         }
         pageInfo {
+          startCursor
           endCursor
           hasNextPage
         }
@@ -47,9 +50,6 @@ export const GITHUB_ISSUES_QUERY = gql`
     }
   }
 `;
-
-
-
 
 const GitHubIssues: React.FC = () => {
   const [labels, setLabels] = useState<string[]>([]);
@@ -74,7 +74,11 @@ const GitHubIssues: React.FC = () => {
     }
   }, [loading, data]);
 
+  console.log('data', data)
+
   const openIssues = data?.repository?.issues?.nodes || [];
+
+  console.log('openIssues', openIssues)
 
   const labelCounts: { [label: string]: number } = {};
   openIssues.forEach((issue) => {
@@ -83,11 +87,9 @@ const GitHubIssues: React.FC = () => {
     });
   });
 
-
   const handlePrevPage = useCallback(() => {
     if (data?.repository?.issues?.pageInfo?.hasPreviousPage) {
       setLoadingMore(true);
-
       fetchMore({
         variables: {
           owner: 'facebook',
@@ -103,7 +105,7 @@ const GitHubIssues: React.FC = () => {
               ...prev.repository,
               issues: {
                 ...prev.repository.issues,
-                nodes: [...fetchMoreResult.repository.issues.nodes, ...prev.repository.issues.nodes],
+                nodes: fetchMoreResult.repository.issues.nodes,
                 pageInfo: fetchMoreResult.repository.issues.pageInfo,
               },
             },
@@ -111,86 +113,66 @@ const GitHubIssues: React.FC = () => {
         },
       }).then((result) => {
         const newIssues = result.data?.repository?.issues?.nodes || [];
-        setIssues([...newIssues, ...issues]);
+        setIssues(newIssues);
         setLoadingMore(false);
       }).catch((error) => {
         console.error('Error fetching previous page issues:', error);
         setLoadingMore(false);
       });
     }
-  }, [data, fetchMore, labels, issues, status]);
+  }, [data, fetchMore, labels, status]);
 
-  const handlePageChange = useCallback((cursor: string) => {
-    fetchMore({
-      variables: {
-        owner: 'facebook',
-        repo: 'react',
-        states: status,
-        labels: labels || [],
-        cursor,
-      },
-      updateQuery: (prev, { fetchMoreResult }) => {
-        if (!fetchMoreResult) return prev;
-        return {
-          repository: {
-            ...prev.repository,
-            issues: {
-              ...prev.repository.issues,
-              nodes: fetchMoreResult.repository.issues.nodes,
-              pageInfo: fetchMoreResult.repository.issues.pageInfo,
+  const handleNextPage = useCallback(() => {
+    if (data?.repository?.issues?.pageInfo?.hasNextPage) {
+      setLoadingMore(true);
+      fetchMore({
+        variables: {
+          owner: 'facebook',
+          repo: 'react',
+          states: status,
+          labels: labels || [],
+          cursor: data.repository.issues.pageInfo.endCursor,
+        },
+        updateQuery: (
+          prev,
+          { fetchMoreResult, error }: { fetchMoreResult?: GitHubIssuesData; error?: ApolloError }
+        ) => {
+          if (error) {
+            console.error('Error in fetchMore:', error);
+            setLoadingMore(false);
+            return prev;
+          }
+  
+          if (!fetchMoreResult) return prev;
+  
+          return {
+            repository: {
+              ...prev.repository,
+              issues: {
+                ...prev.repository.issues,
+                nodes: fetchMoreResult.repository.issues.nodes,
+                pageInfo: fetchMoreResult.repository.issues.pageInfo,
+              },
             },
-          },
-        };
-      },
-    }).then((result) => {
-      const newIssues = result.data?.repository?.issues?.nodes || [];
-      setIssues(newIssues);
-    }).catch((error) => {
-      console.error('Error fetching issues:', error);
-    });
-  }
-    , [fetchMore, labels, status]);
+          };
+        },
+      })
+        .then((result) => {
+          const newIssues = result.data?.repository?.issues?.nodes || [];
+          setIssues(newIssues);
+          setLoadingMore(false);
+        })
+        .catch((error) => {
+          console.error('Error in fetchMore promise:', error);
+          setLoadingMore(false);
+        });
+    }
+  }, [data, fetchMore, labels, status]);
+  
 
-  const updatedPieChartData = {
-    labels: Object.keys(labelCounts),
-    datasets: [
-      {
-        data: Object.values(labelCounts),
-        backgroundColor: [
-          '#5D6FCF',
-          '#86E8A1',
-          '#EF5DA8',
-          '#FFC75F',
-          '#FF5F5F',
-          '#5D6FCF',
-          '#86E8A1',
-          '#EF5DA8',
-          '#FFC75F',
-          '#FF5F5F',
-          '#5D6FCF',
-        ],
-      },
-    ],
-  };
-
-  const chartOptions = {
-    legend: {
-      display: false, // Disable default legend
-    },
-    plugins: {
-      legend: {
-        display: false,
-      },
-    },
-  };
-
-  const legendData = updatedPieChartData.labels.map((label, index) => ({
-    label,
-    color: updatedPieChartData.datasets[0].backgroundColor[index],
-  }));
+  console.log(issues, 'issues ')
 
   if (error) return <p>Error: {error.message}</p>;
-  console.log('issues', issues)
   return (
     <div>
       <h1>Public Issues</h1>
@@ -198,9 +180,8 @@ const GitHubIssues: React.FC = () => {
         <h2>{data?.repository?.owner?.login}/
           {data?.repository?.name}
         </h2>
-        <span className="top-bar-item">{data?.repository?.issues?.totalCount} issues</span>
+        <span className="top-bar-item">{data?.repository?.all?.totalCount} issues</span>
       </div>
-
       <GitHubIssuesFilter
         labels={labelCounts ? Object.keys(labelCounts) : []}
         setLabels={setLabels}
@@ -232,41 +213,16 @@ const GitHubIssues: React.FC = () => {
             <GitHubIssuesTable issues={issues} />
             <div className="github-issues-container">
               <GitHubIssuesPagination
-                pageInfo={data?.repository?.issues?.pageInfo} handlePageChange={handlePageChange}
+                pageInfo={data?.repository?.issues?.pageInfo}
+                handleNextPage={handleNextPage}
                 handlePrevPage={handlePrevPage}
+                loadingMore={loadingMore}
               />
             </div>
           </div>
-
           <div style={{ display: 'flex', flexDirection: 'column', justifyContent: 'center', width: '300px' }}>
-            <Pie data={updatedPieChartData} options={chartOptions} />
-            <div className="legend-container">
-              <div className="column">
-                {legendData.slice(0, 5).map((item) => (
-                  <div key={item.label} className="legend-item">
-                    <span className="legend-color" style={
-                      { backgroundColor: item.color }
-                    }></span>
-                    <span>{item.label}</span>
-                  </div>
-                ))}
-              </div>
-              <div className="column">
-                {legendData.slice(5, 10).map((item, index) => (
-                  <div key={item.label} className="legend-item">
-                    <span className="legend-color"
-                    style={
-                      { backgroundColor: item.color }
-                    }
-                    ></span>
-                    <span>{item.label}</span>
-                  </div>
-                ))}
-              </div>
-            </div>
-
+            <GitHubIssuesDoughnutChart labelCounts={labelCounts} />
           </div>
-
         </div>
       )}
     </div>

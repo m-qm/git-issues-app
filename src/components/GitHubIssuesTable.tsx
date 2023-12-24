@@ -1,11 +1,7 @@
 // src/components/GitHubIssuesTable.tsx
 import React from 'react';
-import { GitHubIssue } from '../types';
-import './GitHubIssuesTable.css';// Import the CSS file
-
-interface GitHubIssuesTableProps {
-  issues: GitHubIssue[] | null;
-}
+import { GitHubIssuesTableProps } from '../types';
+import './GitHubIssuesTable.css';
 
 function parseDate(date: string) {
   const dateObj = new Date(date);
@@ -13,16 +9,13 @@ function parseDate(date: string) {
 }
 
 const GitHubIssuesTable: React.FC<GitHubIssuesTableProps> = ({ issues }) => {
-  console.log(issues, 'issues')
-
-  // function to parse date
-  
   return (
     <table>
       <thead>
         <tr>
           <th>Title</th>
           <th>Date</th>
+          <th>State</th>
           <th>Labels</th>
         </tr>
       </thead>
@@ -30,6 +23,7 @@ const GitHubIssuesTable: React.FC<GitHubIssuesTableProps> = ({ issues }) => {
         {issues?.map((issue) => (
           <tr key={issue.id}>
             <td>{issue.title}</td>
+            <td>{issue.state}</td>
             <td>{parseDate(issue.date)}</td>
             <td>{issue.labels.nodes.map((label) => label.name).join(', ')}</td>
           </tr>

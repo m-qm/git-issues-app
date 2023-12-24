@@ -9,13 +9,11 @@ import { ButtonGroup, Button } from 'react-bootstrap';
 
 const GitHubIssuesFilter: React.FC<GitHubIssuesFilterProps & { fetchIssues: (variables: { owner: string; repo: string; labels: string[]; status: string[]; cursor: string | null }) => Promise<void> }> = ({
   labels,
-  setLabels,
   repo,
   owner,
-  status,
   setIssues,
 }) => {
-  const [selectedLabels, setSelectedLabels] = useState<string[]>([]);
+  const [selectedLabels, setSelectedLabels] = useState<string[]>(labels || []); // Set all labels selected by default
   const [selectedStatus, setSelectedStatus] = useState<string>('OPEN');
   const [closedCount, setClosedCount] = useState(0);
   const [openCount, setOpenCount] = useState(0);
@@ -25,9 +23,12 @@ const GitHubIssuesFilter: React.FC<GitHubIssuesFilterProps & { fetchIssues: (var
 
   const handleLabelChange = (selectedLabel: string) => {
     setSelectedLabels((prevLabels) => {
+      console.log(prevLabels, 'prevLabels');
       const updatedLabels = prevLabels.includes(selectedLabel)
         ? prevLabels.filter((label) => label !== selectedLabel)
         : [...prevLabels, selectedLabel];
+
+        console.log('updatedLabels', updatedLabels);
 
       fetchIssuesData(updatedLabels, selectedStatus);
       return updatedLabels;
@@ -46,6 +47,7 @@ const GitHubIssuesFilter: React.FC<GitHubIssuesFilterProps & { fetchIssues: (var
                   id
                   title
                   state
+                  date: createdAt
                   labels(first: 5) {
                     nodes {
                       name
@@ -53,6 +55,7 @@ const GitHubIssuesFilter: React.FC<GitHubIssuesFilterProps & { fetchIssues: (var
                   }
                 }
                 pageInfo {
+                  startCursor
                   endCursor
                   hasNextPage
                 }
@@ -68,20 +71,22 @@ const GitHubIssuesFilter: React.FC<GitHubIssuesFilterProps & { fetchIssues: (var
           cursor: null,
         },
       });
-      console.log(result, 'result');
       const newData = result.data;
       setIssues(newData.repository.issues.nodes);
     } catch (error) {
       console.error('Error fetching issues:', error);
     }
   };
-
+  
+  
   const handleToggle = () => {
     const newStatus = isOpen ? 'CLOSED' : 'OPEN';
     setSelectedStatus(newStatus);
     fetchIssuesData(selectedLabels, newStatus);
     setIsOpen(!isOpen);
   };
+
+  console.log('selectedLabels', selectedLabels);
 
   useEffect(() => {
     const fetchCounts = async () => {
@@ -105,14 +110,12 @@ const GitHubIssuesFilter: React.FC<GitHubIssuesFilterProps & { fetchIssues: (var
         console.error('Error fetching issue counts:', error);
       }
     };
-
     fetchCounts();
   }, [client, owner, repo]);
 
   return (
     <div>
       <ButtonGroup
-        // add a wrap to the button group
         style={{
           flexWrap: 'wrap',
           width: '80%',
@@ -122,14 +125,14 @@ const GitHubIssuesFilter: React.FC<GitHubIssuesFilterProps & { fetchIssues: (var
           <Button
             key={label}
             variant={selectedLabels.includes(label) ? 'primary' : 'outline-primary'}
-            onClick={() => handleLabelChange(label)}
+            onClick={() => 
+              handleLabelChange(label)
+            }
             size="sm"
             role="checkbox"
             aria-checked={selectedLabels.includes(label)}
             style={{
-              // add some space between the buttons
               margin: '0.25rem',
-              // add rounded corners to the buttons
               borderRadius: '0.25rem',
             }}
           >
@@ -137,7 +140,7 @@ const GitHubIssuesFilter: React.FC<GitHubIssuesFilterProps & { fetchIssues: (var
           </Button>
         ))}
       </ButtonGroup>
-      
+
       <SwitchButton onToggle={handleToggle} isOpen={isOpen} closedCount={closedCount} openCount={openCount} />
 
     </div>

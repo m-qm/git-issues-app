@@ -76,32 +76,36 @@ div {
     overflow: hidden;
   }
 
-  .legend-value {
-    font-size: 14px;
-    margin-bottom: 8px;
-  }
-  
-  .legend-container {
-    display: flex;
-    flex-direction: row;
-    margin-left: 16px;
-  }
-  
-  .legend-item {
-    display: flex;
-    align-items: center;
-    margin-right: 16px;
-    margin-bottom: 8px;
-  }
-  
-  .legend-color {
-    width: 16px;
-    height: 16px;
-    margin-right: 8px;
-    border-radius: 50%;
-  }
-  
-  .legend-text {
-    font-size: 14px;
-  }
-  
+.legend-container {
+  display: flex;
+}
+
+.legend-item {
+  display: flex;
+  flex-direction: row;
+  margin-right: 16px;
+  align-items: center;
+}
+
+.legend-color {
+  display: flex;
+  align-items: center;
+  margin-bottom: 8px;
+  flex-shrink: 0;
+  border-radius: 50%;
+}
+
+.legend-color {
+  width: 16px;
+  height: 16px;
+  margin-right: 8px;
+}
+
+.legend-label {
+  display: inline-block;
+  max-width: 350px; /* Set the maximum width for the legend label */
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+
+}

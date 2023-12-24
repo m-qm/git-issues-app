@@ -13,12 +13,12 @@ interface SwitchButtonProps {
   const SwitchButton: React.FC<SwitchButtonProps> = ({ onToggle, isOpen, closedCount, openCount }) => {
     return (
     <div className="switch-container">
-      <span className={`switch-label ${isOpen ? 'active' : ''}`}>{`Closed: ${closedCount}`}</span>
+      <span className={`switch-label ${isOpen ? 'active' : ''}`}>{`${closedCount} closed`}</span>
       <label className="switch">
         <input type="checkbox" onChange={onToggle} checked={isOpen} />
         <span className="slider round"></span>
       </label>
-      <span className={`switch-label ${!isOpen ? 'active' : ''}`}>{`Open: ${openCount}`}</span>
+      <span className={`switch-label ${!isOpen ? 'active' : ''}`}>{`${openCount} open`}</span>
     </div>
   );
 };

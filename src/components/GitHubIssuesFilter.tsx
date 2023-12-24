@@ -23,12 +23,10 @@ const GitHubIssuesFilter: React.FC<GitHubIssuesFilterProps & { fetchIssues: (var
 
   const handleLabelChange = (selectedLabel: string) => {
     setSelectedLabels((prevLabels) => {
-      console.log(prevLabels, 'prevLabels');
       const updatedLabels = prevLabels.includes(selectedLabel)
         ? prevLabels.filter((label) => label !== selectedLabel)
         : [...prevLabels, selectedLabel];
 
-        console.log('updatedLabels', updatedLabels);
 
       fetchIssuesData(updatedLabels, selectedStatus);
       return updatedLabels;
@@ -85,8 +83,6 @@ const GitHubIssuesFilter: React.FC<GitHubIssuesFilterProps & { fetchIssues: (var
     fetchIssuesData(selectedLabels, newStatus);
     setIsOpen(!isOpen);
   };
-
-  console.log('selectedLabels', selectedLabels);
 
   useEffect(() => {
     const fetchCounts = async () => {

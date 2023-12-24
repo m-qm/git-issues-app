@@ -74,11 +74,7 @@ const GitHubIssues: React.FC = () => {
     }
   }, [loading, data]);
 
-  console.log('data', data)
-
   const openIssues = data?.repository?.issues?.nodes || [];
-
-  console.log('openIssues', openIssues)
 
   const labelCounts: { [label: string]: number } = {};
   openIssues.forEach((issue) => {
@@ -169,9 +165,6 @@ const GitHubIssues: React.FC = () => {
     }
   }, [data, fetchMore, labels, status]);
   
-
-  console.log(issues, 'issues ')
-
   if (error) return <p>Error: {error.message}</p>;
   return (
     <div>

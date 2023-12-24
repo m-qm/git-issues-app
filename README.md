@@ -21,7 +21,7 @@ GitHub Issues Viewer is a React application that allows users to view public iss
 
 1. Clone the repository:
    ```bash
-   git clone https://github.com/m-qm/github-issues-viewer.git
+   git clone https://github.com/m-qm/git-issues.git
    ```
 2. Install the repository:
   ```bash

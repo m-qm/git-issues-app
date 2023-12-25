@@ -205,12 +205,12 @@ const GitHubIssues: React.FC = () => {
           <div className="github-issues-left-container">
             <GitHubIssuesTable issues={issues} />
             <div className="github-issues-container">
-              <GitHubIssuesPagination
+{/*               <GitHubIssuesPagination
                 pageInfo={data?.repository?.issues?.pageInfo}
                 handleNextPage={handleNextPage}
                 handlePrevPage={handlePrevPage}
                 loadingMore={loadingMore}
-              />
+              /> */}
             </div>
           </div>
           <div style={{ display: 'flex', flexDirection: 'column', justifyContent: 'center', width: '300px' }}>

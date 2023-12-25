@@ -58,7 +58,7 @@ div {
   .github-issues-container {
     display: flex;
     flex-direction: row;
-    align-items: center;
+    align-items: flex-start;
   }
 
   .github-issues-left-container {

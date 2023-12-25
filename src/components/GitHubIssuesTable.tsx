@@ -15,7 +15,6 @@ const GitHubIssuesTable: React.FC<GitHubIssuesTableProps> = ({ issues }) => {
         <tr>
           <th>Title</th>
           <th>Date</th>
-          <th>State</th>
           <th>Labels</th>
         </tr>
       </thead>
@@ -23,7 +22,6 @@ const GitHubIssuesTable: React.FC<GitHubIssuesTableProps> = ({ issues }) => {
         {issues?.map((issue) => (
           <tr key={issue.id}>
             <td>{issue.title}</td>
-            <td>{issue.state}</td>
             <td>{parseDate(issue.date)}</td>
             <td>{issue.labels.nodes.map((label) => label.name).join(', ')}</td>
           </tr>
